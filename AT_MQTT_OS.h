@@ -1,0 +1,71 @@
+#ifndef AT_MQTT_OS_H
+#define AT_MQTT_OS_H
+
+#include "main.h"
+#include "FreeRTOS.h"
+#include "queue.h"
+#include <time.h>
+
+/*MQTT用户配置*/
+#define MQTT_WIFI_SSID            ""
+#define MQTT_WIFI_PSWD            ""
+
+#define MQTT_SERVICE_ID            ""
+//三元组信息 https://iot-tool.obs-website.cn-north-4.myhuaweicloud.com/
+#define MQTT_CLIENTID            ""
+#define MQTT_USERNAME            ""
+#define MQTT_USERPWSD            ""
+#define MQTT_HOST_NAME            ""
+
+/*MQTT固定格式*/
+//上报数据
+#define MQTT_TOPIC_REPORT        "$oc/devices/"MQTT_USERNAME"/sys/properties/report"
+#define MQTT_SUB_TOPIC_REPORT    "AT+MQTTSUB=0,\""MQTT_TOPIC_REPORT"\",1\r\n"
+//下发数据
+#define MQTT_TOPIC_COMMAND        "$oc/devices/"MQTT_USERNAME"/sys/commands/#"
+#define MQTT_SUB_TOPIC_COMMAND    "AT+MQTTSUB=0,\""MQTT_TOPIC_COMMAND"\",1\r\n"
+//下发数据反馈
+#define MQTT_SUB_REQUEST_F "AT+MQTTSUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",1\r\n"
+#define MQTT_PUB_REQUEST_F "AT+MQTTPUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",\"\",1,1\r\n"
+//上报数据模板
+#define MQTT_JSON_REPORT_INT    "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%d}}]}"
+#define MQTT_CMD_F_PUS_INT        "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_INT"\",0,0\r\n"
+#define MQTT_JSON_REPORT_DOUBLE "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%.3lf}}]}"
+#define MQTT_CMD_F_PUS_DOUBLE   "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_DOUBLE"\",0,0\r\n"
+
+#define MQTT_SUBRECV_KEYWORD    "MQTTSUBRECV"
+
+/*用户配置*/
+#define MQTT_UART                huart6        //使用的uart外设句柄
+#define MQTT_DEFAULT_TIMEOUT    10000       //默认超时时间
+/*FreeRTOS配置*/
+#define MQTT_QUEUE_LEN          (5)     //队列最多有多少条消息
+#define MQTT_QUEUE_SIZE         (300)   //队列每条消息的最大长度
+#define MQTT_DELAY              osDelay
+
+extern QueueHandle_t queueMqttMsg;
+
+
+HAL_StatusTypeDef MQTT_Init(void);
+
+HAL_StatusTypeDef MQTT_GetWiFiState(uint32_t timeout);
+
+HAL_StatusTypeDef MQTT_ConnectWiFi(char *ssid, char *pswd, uint32_t timeout);
+
+void MQTT_SendNoRetCmd(char *ATCmd);
+
+HAL_StatusTypeDef MQTT_SendRetCmd(char *at_cmd, char *ret_keyword, uint32_t timeout);
+
+HAL_StatusTypeDef MQTT_ReportIntVal(char *property_name, int val);
+
+HAL_StatusTypeDef MQTT_ReportDoubleVal(char *property_name, double val);
+
+HAL_StatusTypeDef MQTT_HandleRequestID(char *sub_recv_text);
+
+HAL_StatusTypeDef MQTT_GetNTPTimeStr(char *time_str, uint32_t timeout);
+
+HAL_StatusTypeDef MQTT_GetNTPTimeTm(struct tm *p_tm, uint32_t timeout);
+
+void MQTT_HandleUARTInterrupt();
+
+#endif //AT_MQTT_OS_H
