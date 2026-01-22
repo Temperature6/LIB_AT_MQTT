@@ -36,7 +36,7 @@
 #define MQTT_SUBRECV_KEYWORD    "MQTTSUBRECV"
 
 /*用户配置*/
-#define MQTT_UART                huart6        //使用的uart外设句柄
+#define MQTT_UART               huart6        //使用的uart外设句柄
 #define MQTT_DEFAULT_TIMEOUT    10000       //默认超时时间
 /*FreeRTOS配置*/
 #define MQTT_QUEUE_LEN          (5)     //队列最多有多少条消息
