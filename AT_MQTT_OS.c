@@ -371,6 +371,9 @@ HAL_StatusTypeDef MQTT_GetNTPTimeTm(struct tm *p_tm, uint32_t timeout)
     return status;
 }
 
+/**
+ * @brief 处理串口中断事件，应在串口中断的中断服务函数中调用
+ */
 void MQTT_HandleUARTInterrupt()
 {
     if (RecvLen >= MQTT_QUEUE_SIZE)
