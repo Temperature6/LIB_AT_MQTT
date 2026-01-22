@@ -2,6 +2,7 @@
 #include "usart.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <cmsis_os2.h>
 
 /*宏定义*/
@@ -18,9 +19,8 @@
 #define CMD_SET_TIME_ZONE				"AT+CIPSNTPCFG=1,8\r\n"
 #define CMD_GET_TIME					"AT+CIPSNTPTIME?\r\n"
 
-#define MQTT_REQUEST_ID_LEN     36
-
 #define TEMP_BUFF_SIZE                  MQTT_QUEUE_SIZE
+#define MQTT_REQUEST_ID_LEN             36
 
 QueueHandle_t queueMqttMsg;
 char RecvCh;
@@ -187,6 +187,7 @@ HAL_StatusTypeDef MQTT_SendRetCmd(char* at_cmd, char* ret_keyword, uint32_t time
     }
     MQTT_SendNoRetCmd(at_cmd);
 
+    //存在多条数据的情况，因此需要多条接收直到找到需要的
     while (xTaskGetTickCount() - beg_tick <= timeout)
     {
         if (xQueueReceive(queueMqttMsg, TempBuff, timeout) != pdTRUE)
@@ -287,7 +288,7 @@ HAL_StatusTypeDef MQTT_HandleRequestID(char* sub_recv_text)
 
 /**
  * @brief 从MQTT服务器获取时间日期
- * @param time_str 获取到的时间日期字符串，格式为 Sat Jan 10 15:58:27 2026
+ * @param time_str 获取到的时间日期字符串，大小应 >= 25 Byte，格式为 Sat Jan 10 15:58:27 2026
  * @param timeout 超时时间，超出返回 HAL_TIMEOUT
  * @retval 成功返回 HAL_OK
  * @note 获取时间需要配置MQTT服务器，且连接正常，如果正常连接到服务器之后仍然获取失败（例如返回1970年），请等待一段时间之后再获取
@@ -298,7 +299,7 @@ HAL_StatusTypeDef MQTT_GetNTPTimeStr(char* time_str, uint32_t timeout)
      * +CIPSNTPTIME:Sat Jan 10 15:58:27 2026
      * Length:24
      * */
-    const size_t time_str_len = 24 + 1;
+    const size_t time_str_len = 24;
     HAL_StatusTypeDef status;
 
     status = MQTT_SendRetCmd(CMD_GET_TIME, "CIPSNTPTIME", timeout);
@@ -308,19 +309,17 @@ HAL_StatusTypeDef MQTT_GetNTPTimeStr(char* time_str, uint32_t timeout)
     char* keywork_pos = strstr(TempBuff, "CIPSNTPTIME");
     if (keywork_pos)
     {
-        memcpy(time_str, keywork_pos + strlen("CIPSNTPTIME") + 1, time_str_len * sizeof (char));
+//        memcpy(time_str, keywork_pos + strlen("CIPSNTPTIME") + 1, (time_str_len) * sizeof (char));
+        strncpy(time_str, keywork_pos + strlen("CIPSNTPTIME") + 1, time_str_len);
         time_str[time_str_len] = 0; //手动添加结束符
         status = HAL_OK;
-
     }
     else
     {
         status = HAL_ERROR;
     }
-
     return status;
 }
-
 
 /**
  * @brief 获取struct tm格式的时间
@@ -331,9 +330,10 @@ HAL_StatusTypeDef MQTT_GetNTPTimeStr(char* time_str, uint32_t timeout)
 HAL_StatusTypeDef MQTT_GetNTPTimeTm(struct tm *p_tm, uint32_t timeout)
 {
     HAL_StatusTypeDef status;
-    char time_str[24] = "";
+    char time_str[25] = "";
     char month_str[4] = "";
     char *number_begin = NULL;
+    char *convert_end = NULL;
     uint16_t temp_year = 0;
     uint8_t i = 0;
 
@@ -342,6 +342,7 @@ HAL_StatusTypeDef MQTT_GetNTPTimeTm(struct tm *p_tm, uint32_t timeout)
 
     //time_str: Sat Jan 10 15:58:27 2026
     strncpy(month_str, time_str + 4, 3);
+    month_str[3] = '\0';
 
     for (i = 0; i < 12; i++)
     {
@@ -353,16 +354,23 @@ HAL_StatusTypeDef MQTT_GetNTPTimeTm(struct tm *p_tm, uint32_t timeout)
     }
 
     number_begin = time_str + 8;
-    sscanf(number_begin, "%d %d:%d:%d %d", &p_tm->tm_mday, &p_tm->tm_hour, &p_tm->tm_min, &p_tm->tm_sec, (int *)&temp_year);
+    //printf("<%s>", number_begin); < 1 08:00:01 1970>
+
+    //number_begin:< 1 08:00:01 1970>
+    p_tm->tm_mday = strtol(number_begin, &convert_end, 10);
+    //convert_end:< 15:58:27 2026>
+    p_tm->tm_hour = strtol(convert_end, &convert_end, 10);
+    convert_end += 1;   //跳过 “:”
+    p_tm->tm_min = strtol(convert_end, &convert_end, 10);
+    convert_end += 1;   //跳过 “:”
+    p_tm->tm_sec = strtol(convert_end, &convert_end, 10);
+    temp_year = strtol(convert_end, &convert_end, 10);
     p_tm->tm_year = temp_year - 1900;
 
     status = HAL_OK;
     return status;
 }
 
-/**
- * @brief 处理串口中断事件，应在串口中断的中断服务函数中调用
- */
 void MQTT_HandleUARTInterrupt()
 {
     if (RecvLen >= MQTT_QUEUE_SIZE)
