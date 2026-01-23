@@ -36,8 +36,8 @@
 #define MQTT_SUBRECV_KEYWORD    "MQTTSUBRECV"
 
 /*用户配置*/
-#define MQTT_UART               huart6        //使用的uart外设句柄
-#define MQTT_DEFAULT_TIMEOUT    10000       //默认超时时间
+#define MQTT_UART               huart6  //使用的uart外设句柄
+#define MQTT_DEFAULT_TIMEOUT    10000   //默认超时时间
 /*FreeRTOS配置*/
 #define MQTT_QUEUE_LEN          (5)     //队列最多有多少条消息
 #define MQTT_QUEUE_SIZE         (300)   //队列每条消息的最大长度
@@ -48,7 +48,7 @@ extern QueueHandle_t queueMqttMsg;
 
 HAL_StatusTypeDef MQTT_Init(void);
 
-HAL_StatusTypeDef MQTT_GetWiFiState(uint32_t timeout);
+HAL_StatusTypeDef MQTT_GetWiFiState(char *ssid, uint32_t timeout);
 
 HAL_StatusTypeDef MQTT_ConnectWiFi(char *ssid, char *pswd, uint32_t timeout);
 

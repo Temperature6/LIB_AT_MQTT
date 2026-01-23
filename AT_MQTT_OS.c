@@ -64,12 +64,12 @@ HAL_StatusTypeDef MQTT_Init(void)
     beg_tick = xTaskGetTickCount();
     while (xTaskGetTickCount() - beg_tick < 10000)
     {
-        status = MQTT_GetWiFiState(200);
+        status = MQTT_GetWiFiState(NULL, 200);
         if (status == HAL_OK) break;
         MQTT_DELAY(200);
     }
 
-    status = MQTT_GetWiFiState(200); //再次查询是否正确连接WiFi
+    status = MQTT_GetWiFiState(NULL, 200); //再次查询是否正确连接WiFi
     if (status != HAL_OK)
     {
         status = MQTT_ConnectWiFi(MQTT_WIFI_SSID, MQTT_WIFI_PSWD, 10000);
@@ -105,25 +105,44 @@ HAL_StatusTypeDef MQTT_Init(void)
 
 /**
  * @brief 获取Wifi状态（需要在调用初始化之后才可用）
+ * @param ssid 如果连接正常，此参数用于输出连接到的WiFi名称，不需要时设置为NULL
  * @param timeout 超时时间，超出返回 HAL_TIMEOUT
  * @retval WiFi连接正常返回 HAL_OK
  * */
-HAL_StatusTypeDef MQTT_GetWiFiState(uint32_t timeout)
+HAL_StatusTypeDef MQTT_GetWiFiState(char *ssid, uint32_t timeout)
 {
     HAL_StatusTypeDef status;
-    char* keyword_pos;
+    char *keyword_pos;
+    char *crlf_pos;
+    char *first_double_quotation_pos;
+    uint8_t wifi_name_len = 0;
 
     status = MQTT_SendRetCmd(CMD_GET_CWSTATE, "+CWSTATE", timeout);
     if (status != HAL_OK) return status;
 
+    //      keyword_pos            crlf_pos
+    //          |                     |
+    //TempBuff:<+CWSTATE:2,"Wifi_Name"\r\n>
+    //                     |
+    //        first_double_quotation_pos
     keyword_pos = strstr(TempBuff, "+CWSTATE");
-    if (*(keyword_pos + 9) == '2')
+    if (*(keyword_pos + 9) != '2')
     {
-        status = HAL_OK;
+        status = HAL_ERROR;
         return status;
     }
 
-    status = HAL_ERROR;
+    if (ssid)
+    {
+        crlf_pos = strstr(TempBuff, "\r\n");    //
+        first_double_quotation_pos = strstr(TempBuff, "\"");
+        if (!crlf_pos || !first_double_quotation_pos) return HAL_ERROR;
+
+        wifi_name_len = crlf_pos - first_double_quotation_pos - 2;
+        strncpy(ssid, first_double_quotation_pos + 1, wifi_name_len);
+    }
+
+    status = HAL_OK;
     return status;
 }
 
@@ -150,7 +169,7 @@ HAL_StatusTypeDef MQTT_ConnectWiFi(char* ssid, char* pswd, uint32_t timeout)
         return status;
     }
 
-    status = MQTT_GetWiFiState(500);
+    status = MQTT_GetWiFiState(NULL, 500);
     return status;
 }
 
@@ -371,9 +390,6 @@ HAL_StatusTypeDef MQTT_GetNTPTimeTm(struct tm *p_tm, uint32_t timeout)
     return status;
 }
 
-/**
- * @brief 处理串口中断事件，应在串口中断的中断服务函数中调用
- */
 void MQTT_HandleUARTInterrupt()
 {
     if (RecvLen >= MQTT_QUEUE_SIZE)
