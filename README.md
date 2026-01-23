@@ -77,7 +77,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 MQTT_ReportIntVal("属性名", 值);
 ```
 
-使用`MQTT_ReportDoubleVal`上报整型数据，上报成功返回 `HAL_OK`
+使用`MQTT_ReportDoubleVal`上报浮点型数据（保留三位小数），上报成功返回 `HAL_OK`
 
 ```c
 MQTT_ReportDoubleVal("属性名", 值);
@@ -184,7 +184,7 @@ void TaskATMqtt(void *argument) {
 MQTT_ReportIntVal("属性名", 值);
 ```
 
-使用`MQTT_ReportDoubleVal`上报整型数据，上报成功返回 `HAL_OK`
+使用`MQTT_ReportDoubleVal`上报浮点型数据（保留三位小数），上报成功返回 `HAL_OK`
 
 ```c
 MQTT_ReportDoubleVal("属性名", 值);
