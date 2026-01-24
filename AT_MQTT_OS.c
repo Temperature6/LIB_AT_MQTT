@@ -18,6 +18,25 @@
 #define CMD_SET_MQTTCONN				"AT+MQTTCONN=0,\""MQTT_HOST_NAME"\",1883,1\r\n"
 #define CMD_SET_TIME_ZONE				"AT+CIPSNTPCFG=1,8\r\n"
 #define CMD_GET_TIME					"AT+CIPSNTPTIME?\r\n"
+/*MQTT固定格式*/
+//上报数据
+#define MQTT_TOPIC_REPORT        "$oc/devices/"MQTT_USERNAME"/sys/properties/report"
+#define MQTT_SUB_TOPIC_REPORT    "AT+MQTTSUB=0,\""MQTT_TOPIC_REPORT"\",1\r\n"
+//下发数据
+#define MQTT_TOPIC_COMMAND        "$oc/devices/"MQTT_USERNAME"/sys/commands/#"
+#define MQTT_SUB_TOPIC_COMMAND    "AT+MQTTSUB=0,\""MQTT_TOPIC_COMMAND"\",1\r\n"
+//下发数据反馈
+#define MQTT_SUB_REQUEST_F "AT+MQTTSUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",1\r\n"
+#define MQTT_PUB_REQUEST_F "AT+MQTTPUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",\"\",1,1\r\n"
+//上报数据模板
+#define MQTT_JSON_REPORT_INT    "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%d}}]}"
+#define MQTT_CMD_F_PUS_INT        "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_INT"\",0,0\r\n"
+#if MQTT_ENABLE_DECIMAL_FORMAT
+#define MQTT_JSON_REPORT_DOUBLE "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%.3lf}}]}"
+#else
+#define MQTT_JSON_REPORT_DOUBLE "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%d.%d}}]}"
+#endif
+#define MQTT_CMD_F_PUS_DOUBLE   "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_DOUBLE"\",0,0\r\n"
 
 #define TEMP_BUFF_SIZE                  MQTT_QUEUE_SIZE
 #define MQTT_REQUEST_ID_LEN             36
@@ -257,7 +276,11 @@ HAL_StatusTypeDef MQTT_ReportDoubleVal(char* property_name, double val)
      * target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -u _printf_float)
      * */
     memset(TempBuff, 0, TEMP_BUFF_SIZE);
+#if MQTT_ENABLE_DECIMAL_FORMAT
     sprintf(TempBuff, MQTT_CMD_F_PUS_DOUBLE, property_name, val);
+#else
+    sprintf(TempBuff, MQTT_CMD_F_PUS_DOUBLE, property_name, (int)val, (int)(val * 1000) % 1000);
+#endif
     return MQTT_SendRetCmd(TempBuff, MSG_SUCCESS, MQTT_DEFAULT_TIMEOUT);
 }
 
