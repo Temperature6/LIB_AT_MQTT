@@ -198,6 +198,14 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -u _printf_float)
 
 这两种类型的数据用的最多，如果有其他数据类型的需要可以自己编写对应的函数，比较简单。
 
+如果遇到了上报浮点数导致RTOS死机的情况，请将下面的宏定义改成`0`
+
+```c
+#define MQTT_ENABLE_DECIMAL_FORMAT  1
+```
+
+
+
 #### 下发指令
 
 ```c
