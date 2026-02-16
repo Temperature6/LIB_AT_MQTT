@@ -263,7 +263,8 @@ void TaskATMqtt(void *argument) {
         xQueueReceive(queueMqttMsg, subrecv_text, portMAX_DELAY);
         //检查数据队列中是否有下发指令的关键字
         if (strstr(subrecv_text, MQTT_SUBRECV_KEYWORD)) {
-            MQTT_HandleRequestID(subrecv_text);	//处理request_id
+            //向应用侧返回执行结果
+            MQTT_HandleRequestID(subrecv_text, 0, "response", "success");
 			
             //在数据中寻找到json的部分
             json_text = strstr(subrecv_text, ",{") + 1; //定位到json数据的未知
