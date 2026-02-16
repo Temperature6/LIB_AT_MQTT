@@ -27,7 +27,7 @@
 #define MQTT_SUB_TOPIC_COMMAND    "AT+MQTTSUB=0,\""MQTT_TOPIC_COMMAND"\",1\r\n"
 //下发数据反馈
 #define MQTT_SUB_REQUEST_F "AT+MQTTSUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",1\r\n"
-#define MQTT_PUB_REQUEST_F "AT+MQTTPUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",\"\",1,1\r\n"
+#define MQTT_PUB_REQUEST_F "AT+MQTTPUB=0,\"$oc/devices/"MQTT_USERNAME"/sys/commands/response/request_id=%s\",\"{\\\"result_code\\\":%d\\,\\\"response_name\\\":\\\"%s\\\"\\,\\\"paras\\\":{\\\"result\\\":\\\"%s\\\"}}\",0,0\r\n"
 //上报数据模板
 #define MQTT_JSON_REPORT_INT    "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%d}}]}"
 #define MQTT_CMD_F_PUS_INT        "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_INT"\",0,0\r\n"
@@ -287,9 +287,12 @@ HAL_StatusTypeDef MQTT_ReportDoubleVal(char* property_name, double val)
 /**
  * @brief 处理下发命令中的request_id，该函数将下发内容中断 request_id提取出来并完成topic的订阅和数据推送，函数应当在收到下发指令后20S内调用
  * @param sub_recv_text 接收到的下发命令的完整字段
+ * @param result_code 返回给云平台的结果, 0表示执行成功
+ * @param response_name 返回给云平台的响应名
+ * @param execute_result 返回给云平台的设备执行结果
  * @retval 成功返回HAL_OK
  * */
-HAL_StatusTypeDef MQTT_HandleRequestID(char* sub_recv_text)
+HAL_StatusTypeDef MQTT_HandleRequestID(char *sub_recv_text, uint16_t result_code, char *response_name, char *execute_result)
 {
     HAL_StatusTypeDef status = HAL_OK;
     const char* request_id_keyword =  "request_id=";
@@ -314,7 +317,11 @@ HAL_StatusTypeDef MQTT_HandleRequestID(char* sub_recv_text)
         MQTT_SendRetCmd(TempBuff, MSG_SUCCESS, MQTT_DEFAULT_TIMEOUT);
 
         memset(TempBuff, 0, TEMP_BUFF_SIZE);
-        sprintf(TempBuff, MQTT_PUB_REQUEST_F, request_id);
+        sprintf(TempBuff, MQTT_PUB_REQUEST_F,
+                request_id,
+                result_code,
+                response_name == NULL ? "" : response_name,
+                execute_result);
         MQTT_SendRetCmd(TempBuff, MSG_SUCCESS, MQTT_DEFAULT_TIMEOUT);
 
         status = HAL_OK;

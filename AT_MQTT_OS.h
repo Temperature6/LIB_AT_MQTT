@@ -23,7 +23,7 @@
 #define MQTT_UART                   huart6        //使用的uart外设句柄
 #define MQTT_DEFAULT_TIMEOUT        10000       //默认超时时间
 /*FreeRTOS配置*/
-#define MQTT_ENABLE_DECIMAL_FORMAT  1
+#define MQTT_ENABLE_DECIMAL_FORMAT  0
 #define MQTT_QUEUE_LEN              (5)     //队列最多有多少条消息
 #define MQTT_QUEUE_SIZE             (300)   //队列每条消息的最大长度
 #define MQTT_DELAY                  osDelay
@@ -45,7 +45,7 @@ HAL_StatusTypeDef MQTT_ReportIntVal(char *property_name, int val);
 
 HAL_StatusTypeDef MQTT_ReportDoubleVal(char *property_name, double val);
 
-HAL_StatusTypeDef MQTT_HandleRequestID(char *sub_recv_text);
+HAL_StatusTypeDef MQTT_HandleRequestID(char *sub_recv_text, uint16_t result_code, char *response_name, char *execute_result);
 
 HAL_StatusTypeDef MQTT_GetNTPTimeStr(char *time_str, uint32_t timeout);
 
