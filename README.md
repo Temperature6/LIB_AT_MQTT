@@ -204,6 +204,17 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -u _printf_float)
 #define MQTT_ENABLE_DECIMAL_FORMAT  1
 ```
 
+使用`MQTT_ReportCustomJSONPayload`上报自定义Payload，华为云对payload格式要求极其严格，下面给出使用模板
+
+```c
+const char *json_payload = "{\\\"Temp\\\":%d\\,\\\"PH\\\":%d\\,\\\"DO\\\":%d\\,\\\"water_level\\\":%d}";
+char payload_buffer[100] = "";
+sprintf(payload_buffer, json_payload, 10, 10, 10, 10);
+MQTT_ReportCustomJSONPayload(payload_buffer);
+```
+
+注意，payload模板中的逗号也需要转义,双引号前有三个转义符,不能有任何多余的空格
+
 
 
 #### 下发指令

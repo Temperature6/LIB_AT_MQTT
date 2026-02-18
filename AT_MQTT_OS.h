@@ -45,6 +45,8 @@ HAL_StatusTypeDef MQTT_ReportIntVal(char *property_name, int val);
 
 HAL_StatusTypeDef MQTT_ReportDoubleVal(char *property_name, double val);
 
+HAL_StatusTypeDef MQTT_ReportCustomJSONPayload(const char * payload);
+
 HAL_StatusTypeDef MQTT_HandleRequestID(char *sub_recv_text, uint16_t result_code, char *response_name, char *execute_result);
 
 HAL_StatusTypeDef MQTT_GetNTPTimeStr(char *time_str, uint32_t timeout);

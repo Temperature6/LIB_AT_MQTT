@@ -37,6 +37,9 @@
 #define MQTT_JSON_REPORT_DOUBLE "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":{\\\"%s\\\":%d.%d}}]}"
 #endif
 #define MQTT_CMD_F_PUS_DOUBLE   "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_DOUBLE"\",0,0\r\n"
+//自定义Json Payload
+#define MQTT_JSON_REPORT_PAYLOAD    "{\\\"services\\\":[{\\\"service_id\\\":\\\""MQTT_SERVICE_ID"\\\"\\,\\\"properties\\\":%s}]}"
+#define MQTT_CMD_F_PUS_PAYLOAD      "AT+MQTTPUB=0,\""MQTT_TOPIC_REPORT"\",\""MQTT_JSON_REPORT_PAYLOAD"\",0,0\r\n"
 
 #define TEMP_BUFF_SIZE                  MQTT_QUEUE_SIZE
 #define MQTT_REQUEST_ID_LEN             36
@@ -258,6 +261,7 @@ HAL_StatusTypeDef MQTT_ReportIntVal(char* property_name, int val)
 {
     memset(TempBuff, 0, TEMP_BUFF_SIZE);
     sprintf(TempBuff, MQTT_CMD_F_PUS_INT, property_name, val);
+    printf("%s", TempBuff);
     return MQTT_SendRetCmd(TempBuff, MSG_SUCCESS, MQTT_DEFAULT_TIMEOUT);
 }
 
@@ -281,6 +285,19 @@ HAL_StatusTypeDef MQTT_ReportDoubleVal(char* property_name, double val)
 #else
     sprintf(TempBuff, MQTT_CMD_F_PUS_DOUBLE, property_name, (int)val, (int)(val * 1000) % 1000);
 #endif
+    return MQTT_SendRetCmd(TempBuff, MSG_SUCCESS, MQTT_DEFAULT_TIMEOUT);
+}
+
+/**
+ * @brief 上报自定义的Json Payload
+ * @param payload
+ * @return 成功返回HAL_OK
+ */
+HAL_StatusTypeDef MQTT_ReportCustomJSONPayload(const char * payload)
+{
+    memset(TempBuff, 0, TEMP_BUFF_SIZE);
+    sprintf(TempBuff, MQTT_CMD_F_PUS_PAYLOAD, payload);
+    printf("%s", TempBuff);
     return MQTT_SendRetCmd(TempBuff, MSG_SUCCESS, MQTT_DEFAULT_TIMEOUT);
 }
 
